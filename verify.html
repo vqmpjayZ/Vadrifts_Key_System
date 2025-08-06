@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Key Verification</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #1c1c1c;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      text-align: center;
+      width: 300px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background: #4caf50;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #43a047;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Verify HWID</h2>
+    <p>Your HWID was copied to clipboard. Paste or auto-fill it below.</p>
+    <input id="hwidInput" type="text" placeholder="HWID will appear here..." />
+    <button onclick="getKey()">Get My Key</button>
+    <p id="status" style="margin-top: 15px;"></p>
+  </div>
+
+  <script>
+    async function getClipboardText() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text.length >= 6) {
+          document.getElementById("hwidInput").value = text;
+        }
+      } catch (err) {
+        console.warn("Clipboard access denied or blocked");
+      }
+    }
+
+    async function getKey() {
+      const hwid = document.getElementById("hwidInput").value;
+      if (!hwid || hwid.length < 6) {
+        document.getElementById("status").innerText = "Invalid HWID.";
+        return;
+      }
+
+      document.getElementById("status").innerText = "Generating key link...";
+
+      try {
+        const res = await fetch(`/create?hwid=${encodeURIComponent(hwid)}`);
+        const link = await res.text();
+
+        if (res.ok) {
+          window.location.href = link;
+        } else {
+          document.getElementById("status").innerText = "Failed: " + link;
+        }
+      } catch (err) {
+        document.getElementById("status").innerText = "Error generating key.";
+      }
+    }
+
+    getClipboardText();
+  </script>
+</body>
+</html>
