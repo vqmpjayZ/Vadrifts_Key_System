@@ -47,8 +47,142 @@ function verifyKey(key, userId, timestamp) {
   return crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expectedKey));
 }
 
-// Generate new key endpoint
-app.post('/api/generate-key', (req, res) => {
+// Universal key page that works for any user
+app.get('/getkey', (req, res) => {
+  // This will work for any user who visits
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Get Your Key</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .container {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                text-align: center;
+                max-width: 400px;
+                width: 100%;
+            }
+            .key-box {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin: 20px 0;
+                font-family: monospace;
+                font-size: 14px;
+                word-break: break-all;
+                border: 2px dashed #dee2e6;
+                display: none;
+            }
+            .copy-btn {
+                background: #28a745;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 10px;
+                display: none;
+            }
+            .copy-btn:hover {
+                background: #218838;
+            }
+            .generate-btn {
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔑 Get Your Access Key</h1>
+            <p>Complete the verification above, then generate your personal key:</p>
+            
+            <!-- work.ink ad goes here -->
+            <div id="work-ink-ad">
+                <!-- Replace this with actual work.ink code -->
+                <p style="color: #666;">Complete the verification task above ↑</p>
+            </div>
+            
+            <button class="generate-btn" onclick="generateKey()">Generate My Key</button>
+            
+            <div class="key-box" id="keyBox"></div>
+            
+            <button class="copy-btn" id="copyBtn" onclick="copyKey()">
+                Copy Key
+            </button>
+            
+            <script>
+                let userKey = null;
+                
+                function generateKey() {
+                    // Generate a random user ID (or use Roblox user ID if available)
+                    const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    
+                    fetch('/api/generate-universal-key', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ userId: userId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.key) {
+                            userKey = data.key;
+                            document.getElementById('keyBox').textContent = userKey;
+                            document.getElementById('keyBox').style.display = 'block';
+                            document.getElementById('copyBtn').style.display = 'inline-block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to generate key. Try again.');
+                    });
+                }
+                
+                function copyKey() {
+                    if (userKey) {
+                        navigator.clipboard.writeText(userKey).then(() => {
+                            const btn = document.getElementById('copyBtn');
+                            btn.textContent = 'Copied!';
+                            btn.style.background = '#17a2b8';
+                            setTimeout(() => {
+                                btn.textContent = 'Copy Key';
+                                btn.style.background = '#28a745';
+                            }, 2000);
+                        });
+                    }
+                }
+            </script>
+        </div>
+    </body>
+    </html>
+  `;
+  
+  res.send(html);
+});
+
+// API endpoint for universal key generation
+app.post('/api/generate-universal-key', (req, res) => {
   try {
     const { userId } = req.body;
     
@@ -56,11 +190,9 @@ app.post('/api/generate-key', (req, res) => {
       return res.status(400).json({ error: 'User ID required' });
     }
 
-    const sessionId = generateSession();
     const timestamp = Date.now();
     const key = generateKey(userId, timestamp);
     
-    // Store key with expiration (24 hours)
     const keyData = {
       key,
       userId,
@@ -70,19 +202,14 @@ app.post('/api/generate-key', (req, res) => {
     };
     
     keys.set(key, keyData);
-    userSessions.set(sessionId, { userId, keyGenerated: true });
-
-    // Clean up expired keys
-    cleanupExpiredKeys();
 
     res.json({
-      sessionId,
-      keyUrl: `${req.protocol}://${req.get('host')}/key/${sessionId}`,
-      expiresIn: 24 * 60 * 60 * 1000 // 24 hours in ms
+      key: key,
+      expiresIn: 24 * 60 * 60 * 1000
     });
     
   } catch (error) {
-    console.error('Key generation error:', error);
+    console.error('Universal key generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
