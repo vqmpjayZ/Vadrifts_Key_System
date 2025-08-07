@@ -23,6 +23,7 @@
       position: relative;
     }
 
+    /* Animated background particles */
     body::before {
       content: '';
       position: absolute;
@@ -265,8 +266,8 @@
   <div class="container">
     <div class="box">
       <div class="logo">🔐</div>
-      <h2>Generate Key</h2>
-      <p class="subtitle">You Must enter your HWID so we can generate the key for the right user. Copy your HWID from the roblox key system.<br>Verify below to generate your access key.</p>
+      <h2>Verify HWID</h2>
+      <p class="subtitle">For us to generate you the correct key you must give us your HWID, which you can get from the script.<br>Verify below to generate your access key.</p>
       
       <div class="input-group">
         <input id="hwidInput" type="text" placeholder="Hardware ID will appear here..." />
@@ -283,12 +284,39 @@
 
   <script>
     let isValidHwid = false;
+    const allowedReferrers = ['work.ink', 'www.work.ink', 'lootlabs.gg'];
+
+    function checkAccess() {
+      const referrer = document.referrer;
+      const hasValidReferrer = allowedReferrers.some(domain => 
+        referrer.includes(domain)
+      );
+
+      const isDirectAccess = !referrer;
+      
+      if (!hasValidReferrer) {
+        showAccessDenied();
+        return false;
+      }
+      return true;
+    }
+
+    function showAccessDenied() {
+      document.querySelector('.box').innerHTML = `
+        <div class="logo">🚫</div>
+        <h2 style="background: linear-gradient(135deg, #dc3545, #c82333); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Access Denied</h2>
+        <p class="subtitle">Direct access to this page is not permitted.<br>Please access through the authorized portal.</p>
+        <div class="status error" style="margin-top: 30px;">
+          Unauthorized access attempt detected
+        </div>
+      `;
+    }
 
     function updateHwidIndicator() {
       const hwid = document.getElementById("hwidInput").value;
       const indicator = document.getElementById("hwidIndicator");
       
-      if (hwid && hwid.length >= 25) {
+      if (hwid && hwid.length >= 6) {
         indicator.classList.add("valid");
         isValidHwid = true;
       } else {
@@ -306,10 +334,10 @@
     async function getClipboardText() {
       try {
         const text = await navigator.clipboard.readText();
-        if (text && text.length >= 6) {
+        if (text && text.length >= 25) {
           document.getElementById("hwidInput").value = text;
           updateHwidIndicator();
-          setStatus("Hardware ID detected from clipboard", "success");
+          setStatus("HWID pasted from your clipboard", "success");
         }
       } catch (err) {
         console.warn("Clipboard access denied or blocked");
@@ -321,8 +349,8 @@
       const hwid = document.getElementById("hwidInput").value;
       const btn = document.getElementById("verifyBtn");
       
-      if (!hwid || hwid.length < 6) {
-        setStatus("Please enter a valid HWID.", "error");
+      if (!hwid || hwid.length < 25) {
+        setStatus("Please enter your HWID.", "error");
         return;
       }
 
@@ -358,7 +386,9 @@
       }
     });
 
-    getClipboardText();
+    if (checkAccess()) {
+      getClipboardText();
+    }
   </script>
 </body>
 </html>
