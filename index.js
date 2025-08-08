@@ -27,7 +27,7 @@ function createSlug(hwid) {
 }
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.join(__dirname, "public", "express.html"));
 });
 
 app.get("/create", (req, res) => {
