@@ -26,6 +26,10 @@ function createSlug(hwid) {
     return slug;
 }
 
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.get("/create", (req, res) => {
     const hwid = req.query.hwid;
     if (!hwid) return res.status(400).send("Missing HWID");
@@ -43,6 +47,7 @@ app.get("/getkey/:slug", (req, res) => {
 });
 
 app.get("/verify", (req, res) => {
+    const selectedSystem = req.query.system;
     res.sendFile(path.join(__dirname, "public", "verify.html"));
 });
 
