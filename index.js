@@ -12,8 +12,8 @@ app.use(express.static("public"));
 const activeSlugs = new Map();
 
 function generateKey(hwid) {
-    const week = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7));
-    const hash = crypto.createHash("sha256").update(hwid + week).digest("hex");
+    const period = Math.floor(Date.now() / (1000 * 60 * 60 * 48));
+    const hash = crypto.createHash("sha256").update(hwid + period).digest("hex");
     return hash.slice(0, 16);
 }
 
